@@ -15,8 +15,10 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -34,6 +36,8 @@ public class CentralServer implements ActionListener {
     private JTextArea textArea = new JTextArea();
     private JLabel online = new JLabel("Currently Online");
     private JTextArea clientDisplay = new JTextArea();
+    private JLabel askName = new JLabel("Enter your username:");
+    private JTextField username = new JTextField(10);
     private JTextField textField = new JTextField(30);
     private JButton sendButton = new JButton("Send");
     private JButton connectButton = new JButton("Connect");
@@ -64,6 +68,8 @@ public class CentralServer implements ActionListener {
         // adds the text field to view the messages exchanged
         textArea.setEditable(false);
         textField.setEditable(false);
+        sendButton.setEnabled(false);
+        username.setEditable(true);
         JScrollPane areaScrollPane = new JScrollPane(textArea);
         areaScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         areaScrollPane.setPreferredSize(new Dimension(430, 275));
@@ -79,6 +85,8 @@ public class CentralServer implements ActionListener {
         //add a label to the client display
         //p1.add(online);
         p1.add(areaScrollPane1);
+        p1.add(askName);
+        p1.add(username);
         p1.add(textField);
         p1.add(sendButton);
         p1.add(connectButton);
@@ -142,6 +150,9 @@ public class CentralServer implements ActionListener {
             try{
                 message = (String)getStream.readObject();
                 showMessage("\n" +message);
+                //JANKI
+                //PRINT OUT WHAT SERVER READS
+                System.out.println("server: "+ message);
             }catch(ClassNotFoundException r){
                 showMessage("\n Not a valid object");
             }
@@ -169,6 +180,7 @@ public class CentralServer implements ActionListener {
             sendStream.writeObject("SERVER - " + w);
             sendStream.flush();
             showMessage("\n SERVER - " + w);
+            
         }catch(IOException z){
             textArea.append("\n Message not send\n");
         }
@@ -201,8 +213,16 @@ public class CentralServer implements ActionListener {
     //BUTTON WHUCH READ THE MESSAGE FROM THE TEXT BOX AND DISPLAYS ON THE SCREEN
     @Override public void actionPerformed(ActionEvent arg0) {
         String message = textField.getText();
-        textArea.append("UserName: "+ message + "\n");
+        //Get username
+        String nameInput = nameInput = username.getText();
+        
+        if(nameInput.equals(null))
+            nameInput = "Anonymous";
+        
+        textArea.append(nameInput + ": "+ message + "\n");
         textField.setText("");
+        username.setEditable(false);
+        
         if(arg0.getSource() == sendButton)
         {
             System.out.println("clicked on send button.");
@@ -218,11 +238,12 @@ public class CentralServer implements ActionListener {
     public void doSendMessage(String msg)
     {
         try{
+            //send out the message read from the client input
             sendStream.writeObject(msg);
             sendStream.flush();
             System.out.println(msg);
         }
-        catch(IOException e){System.out.println(e);}
+        catch(IOException e){System.err.println(e);}
     }
     
     public void doManageConnection()
@@ -230,19 +251,26 @@ public class CentralServer implements ActionListener {
         if(connected == false)
         {
             try{
-                Socket echoSocket = new Socket("192.168.1.67", 6789 );
+                //get ip address
+                InetAddress ip = InetAddress.getLocalHost();
+                //open a socket
+                Socket echoSocket = new Socket(ip, 6789 );
                 System.out.println(echoSocket);
                 sendStream = new ObjectOutputStream(echoSocket.getOutputStream());
                 sendStream.flush();
                 
                 getStream = new ObjectInputStream(echoSocket.getInputStream());
+                //enable message input field
+                sendButton.setEnabled(true);
                 textField.setEditable(true);
                 connected = true;
+                connectButton.setText("Disconnect");
                 System.out.println("connected is true in doManageConnection.");
             }
-            catch(IOException e)
-            {
-                System.out.println(e);
+            catch (UnknownHostException e) {
+                System.err.println("Unknown Host: " + e);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
         else
@@ -250,8 +278,11 @@ public class CentralServer implements ActionListener {
             try{
                 getStream.close();
                 sendStream.close();
+                sendButton.setEnabled(false);
+                connected = false;
+                connectButton.setText("Connect");
             }
-            catch(IOException e){System.out.println(e);}
+            catch(IOException e){System.err.println("Error closing Socket " + e);}
         }
     }
     
