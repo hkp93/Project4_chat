@@ -15,6 +15,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -64,6 +65,8 @@ public class CentralServer implements ActionListener {
         // adds the text field to view the messages exchanged
         textArea.setEditable(false);
         textField.setEditable(false);
+        sendButton.setEnabled(false);
+        
         JScrollPane areaScrollPane = new JScrollPane(textArea);
         areaScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         areaScrollPane.setPreferredSize(new Dimension(430, 275));
@@ -142,6 +145,9 @@ public class CentralServer implements ActionListener {
             try{
                 message = (String)getStream.readObject();
                 showMessage("\n" +message);
+                //JANKI
+                //PRINT OUT WHAT SERVER READS
+                System.out.println("server: "+ message);
             }catch(ClassNotFoundException r){
                 showMessage("\n Not a valid object");
             }
@@ -169,6 +175,7 @@ public class CentralServer implements ActionListener {
             sendStream.writeObject("SERVER - " + w);
             sendStream.flush();
             showMessage("\n SERVER - " + w);
+            
         }catch(IOException z){
             textArea.append("\n Message not send\n");
         }
@@ -218,6 +225,7 @@ public class CentralServer implements ActionListener {
     public void doSendMessage(String msg)
     {
         try{
+            //send out the message read from the client input
             sendStream.writeObject(msg);
             sendStream.flush();
             System.out.println(msg);
@@ -230,14 +238,20 @@ public class CentralServer implements ActionListener {
         if(connected == false)
         {
             try{
-                Socket echoSocket = new Socket("192.168.1.67", 6789 );
+                //get ip address
+                InetAddress ip = InetAddress.getLocalHost();
+                //open a socket
+                Socket echoSocket = new Socket(ip, 6789 );
                 System.out.println(echoSocket);
                 sendStream = new ObjectOutputStream(echoSocket.getOutputStream());
                 sendStream.flush();
                 
                 getStream = new ObjectInputStream(echoSocket.getInputStream());
+                //enable message input field
+                sendButton.setEnabled(true);
                 textField.setEditable(true);
                 connected = true;
+                connectButton.setText("Disconnect");
                 System.out.println("connected is true in doManageConnection.");
             }
             catch(IOException e)
@@ -250,6 +264,9 @@ public class CentralServer implements ActionListener {
             try{
                 getStream.close();
                 sendStream.close();
+                sendButton.setEnabled(false);
+                connected = false;
+                connectButton.setText("Connect");
             }
             catch(IOException e){System.out.println(e);}
         }
