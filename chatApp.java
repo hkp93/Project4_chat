@@ -27,7 +27,7 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
 
-public class CentralServer implements ActionListener {
+public class chatApp implements ActionListener {
     
     // Here we will add all the required components of the chat application
     private JFrame frame = new JFrame("Project 4 - Chat Application");
@@ -46,7 +46,7 @@ public class CentralServer implements ActionListener {
     private Socket connection;
     
     // constructor for the chatApp
-    public CentralServer() {
+    public chatApp() {
         
         //FRAME FOR THE DISPLAY
         frame.setSize(600, 375);

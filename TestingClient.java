@@ -4,6 +4,5 @@ public class TestingClient {
 		ClientFile henvy;
 		henvy = new ClientFile();
 		henvy.RunClient();
-
 	}
 }

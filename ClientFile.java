@@ -21,6 +21,7 @@ public class ClientFile implements ActionListener{
     private JButton sendButton = new JButton("Send");
     private JTextField portfeild = new JTextField("6789");
     private JTextField ip = new JTextField("127.0.0.1");
+    private JTextField getUsername = new JTextField(10);
     private JButton portbutton = new JButton("Connect");
     // to send the stream to  the other clients
     private ObjectOutputStream sendStream;
@@ -61,6 +62,7 @@ public class ClientFile implements ActionListener{
         areaScrollPane1.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         areaScrollPane1.setPreferredSize(new Dimension(120, 200));
         online.setPreferredSize(new Dimension(120,40));
+        p1.add(getUsername);
         p1.add(portfeild);
         p1.add(ip);
         p1.add(portbutton);
@@ -74,8 +76,6 @@ public class ClientFile implements ActionListener{
         // adds the panel to the frame
         frame.add(p1);
         frame.setVisible(true);
-    	
-    	
     }
     //when connecting to the server
     public void RunClient(){
@@ -113,7 +113,6 @@ public class ClientFile implements ActionListener{
     	sendStream.flush();
     	getStream = new ObjectInputStream(connection.getInputStream());
     	showMessage("\n Streams setup completedly \n"); ////-----?> update the clients list here
-    	
     }
     // method : chatting : chatting between the central server and clients
     private void chatting() throws IOException{
@@ -161,9 +160,9 @@ public class ClientFile implements ActionListener{
     // Method send message  -- sends the message to the display
     private void sendMessage(String w){
     	try{
-    		sendStream.writeObject("CLIENT - " + w);
+    		sendStream.writeObject(w);
     		sendStream.flush();
-    		showMessage("\n CLIENT - " + w);
+    		showMessage("\n " + w);
     	}catch(IOException z){
     		textArea.append("\n Message not send\n");
     	}
@@ -193,18 +192,33 @@ public class ClientFile implements ActionListener{
     	
     }
     
-    @Override
  // HERE WE ONLY HAVE ONE ACTION LISTNER WHICH WILL BE LOCATED ON THE SEND
     //BUTTON WHUCH READ THE MESSAGE FROM THE TEXT BOX AND DISPLAYS ON THE SCREEN
-    public void actionPerformed(ActionEvent arg0) {
-    	 if(arg0.getSource() == portbutton){
-    		 this.RunClient();
+    @Override public void actionPerformed(ActionEvent arg0) {
+    	String username = ""; 
+    	if(arg0.getSource() == portbutton){
+    		 //RunClient();
+    		 //canType(true);
     	 }
     	 if(arg0.getSource() == sendButton){
     		 String message = textField.getText();
-          sendMessage(message);
-          textField.setText("");
+    	
+	    	//get client's username
+	    	username = getUsername.getText();
+	    	getUsername.setEditable(false);
+	    	//if user didn't enter username
+	    	if(username.equals(""))
+	    		username = "Anonymous";
+	    	
+	    	String print = username + ": " + message;
+	        sendMessage(print);
+	        textField.setText("");
     	 }
     }
+    
+    public static void main(String[]  args){
+		ClientFile client1 = new ClientFile();
+		client1.RunClient();
 
+	}
 }

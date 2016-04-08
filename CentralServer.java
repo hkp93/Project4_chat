@@ -16,10 +16,12 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -33,23 +35,25 @@ import javax.swing.SwingUtilities;
 public class CentralServer implements ActionListener {
 	
 		// for multiple clients
-		private List<MultipleClients>clients = new ArrayList<MultipleClients>();
+	public List<MultipleClients>clients = new ArrayList<MultipleClients>();
 		// Here we will add all the required components of the chat application
-        private JFrame frame = new JFrame("Project 4 - Chat Application");
-        private JTextArea textArea = new JTextArea();
-        private JLabel online = new JLabel("Currently Online");
-        private JTextArea clientDisplay = new JTextArea();
-        private JTextField textField = new JTextField(30);
-        private JButton sendButton = new JButton("Send");
+		public JFrame frame = new JFrame("Project 4 - Chat Application");
+        public JTextArea textArea = new JTextArea();
+        public JLabel online = new JLabel("Currently Online");
+        public JTextArea clientDisplay = new JTextArea();
+        public JTextField textField = new JTextField(30);
+        public JButton sendButton = new JButton("Send");
         // to send the stream to  the other clients
-        private ObjectOutputStream sendStream;
+        public ObjectOutputStream sendStream;
         // to get the stream from the other clients
-        private ObjectInputStream getStream;
+        public ObjectInputStream getStream;
         // establishing a server
-        private ServerSocket CentralServer;
+        public ServerSocket CentralServer;
         // setting up the connection between computers
-        private Socket connection;
+        public Socket connection;
         
+        ConcurrentLinkedQueue clientList = new ConcurrentLinkedQueue();        
+        public  SocketThread temp;
         // constructor for the chatApp
         public CentralServer() {
         		
@@ -85,20 +89,103 @@ public class CentralServer implements ActionListener {
                 // adds the panel to the frame
                 frame.add(p1);
                 frame.setVisible(true);
+                //temp = new ConnectionThread(this);
+                new ConnectThread(this);
+                /*//keep reading the socket
+                while(true)
+                {
+	                try {
+	                	InetAddress ip = InetAddress.getLocalHost();
+	        			//open a socket
+		        		//Socket echoSocket = new Socket(ip, 6789 );
+	        			//ServerSocket ss = new ServerSocket(InetAddress.getLocalHost(), 6789);
+		        		ServerSocket ss = new ServerSocket(6789,100);
+		        		while(true)
+	        			{
+		        			SocketThread client1 = new SocketThread(this, ss.accept());
+	        			}
+	        		} catch (IOException e) {
+	        			e.printStackTrace();
+	        		}
+                }*/
+            	//temp.RunServer();
+                //new ConnectionThread(this).start();
         }
-        
+
+        // HERE WE ONLY HAVE ONE ACTION LISTNER WHICH WILL BE LOCATED ON THE SEND
+        //BUTTON WHUCH READ THE MESSAGE FROM THE TEXT BOX AND DISPLAYS ON THE SCREEN
+        @Override public void actionPerformed(ActionEvent arg0) {
+                String message = textField.getText();
+                
+                try {
+                	//ConnectionThread temp = new ConnectionThread(this);
+                	//temp.RunServer();
+                	new ConnectThread(this);
+					temp.sendMessage(message);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+                textField.setText("");
+        }
+}
+
+//thread to connect server to client
+class ConnectThread extends Thread
+{
+	CentralServer gui;
+	public ConnectThread(CentralServer cs)
+	{
+		gui = cs;
+		start();
+	}
+	public void run()
+	{
+		//keep reading the socket
+		try {
+			while(true)
+		    {
+		        InetAddress ip = InetAddress.getLocalHost();
+				//open a socket
+	    		//Socket echoSocket = new Socket(ip, 6789 );
+				//ServerSocket ss = new ServerSocket(InetAddress.getLocalHost(), 6789);
+	    		ServerSocket ss = new ServerSocket(6789,100);
+	    		while(true)
+				{
+	    			SocketThread client1 = new SocketThread(gui, ss.accept());
+	    			gui.clientList.add(client1);
+	    			System.out.println("Size of CLIENT LIST " + gui.clientList.size());
+				}
+			}
+		}catch (IOException e) {
+				e.printStackTrace();
+			}
+	}
+}
+
+class SocketThread extends Thread
+{
+	CentralServer gui;
+	Socket soc;
+	
+	public SocketThread(CentralServer c, Socket socket)
+	{
+		gui = c;
+		soc = socket;
+		start();
+	}
         //Once the GUI is set we now will establish our connection
         // Class : RunServer -
-        public void RunServer(){
+        public void run(){
         	
         	try{
         		// 6789 - port number , where we want to connect
         		// 100 - backlog , number of people can wait
-        		CentralServer = new ServerSocket(6789,100);
+        		//gui.CentralServer = new ServerSocket(6789,100);
         		while(true){
         			try{
         				// here we will connect and have a chat
-        				waitForConnection(); 
+        				//waitForConnection(); 
         				setupStream(); 
         				chatting(); 
         			}catch(EOFException c){
@@ -118,17 +205,18 @@ public class CentralServer implements ActionListener {
         //            established between the clients and the server
         private void waitForConnection() throws IOException{
         	showMessage("Current Status : Waiting for a valid connection!\n");
-        	connection = CentralServer.accept();
-        	clients.add(new MultipleClients("first",connection.getInetAddress(),6789,50));
-        	showMessage("Current Status : Connected to " + connection.getInetAddress().getHostName());
+        	soc = gui.CentralServer.accept();
+        	gui.clients.add(new MultipleClients("first",soc.getInetAddress(),6789,50));
+        	showMessage("Current Status : Connected to " + soc.getInetAddress().getHostName());
         }
         
      // Method : setupStream : set up the Stream with the connection found
         private void setupStream() throws IOException{
         	// setup the output stream
-        	sendStream = new ObjectOutputStream(connection.getOutputStream());
-            sendStream.flush();
-            getStream = new ObjectInputStream(connection.getInputStream());
+        	gui.sendStream = new ObjectOutputStream(soc.getOutputStream());
+        	gui.sendStream.flush();
+        	
+        	gui.getStream = new ObjectInputStream(soc.getInputStream());
             showMessage("Current Status : Stream Setup Complete \n");
         }
      // Method : chatting - the method in which the actual chatting takes 
@@ -138,25 +226,24 @@ public class CentralServer implements ActionListener {
         	sendMessage(message);
         	canType(true);
         	// continue a conversation until the client wants to
-        	do{
+        	while(!message.equals("END")){
         		try{
-        			message = (String)getStream.readObject();
+        			message = (String)gui.getStream.readObject();
         			showMessage("\n" +message);
         		}catch(ClassNotFoundException r){
         			showMessage("\n Not a valid object");
         		}
-        	}while(!message.equals("END"));
+        	}//while(!message.equals("END"));
         }
-        
         
         //Method : closeApp - Close the application(streams and socket) when done with it
         private void closeApp(){
         	showMessage("\n Current Status :Closing the connections \n");
         	canType(false);
         	try{
-        		sendStream.close();
-        		getStream.close();
-        		connection.close();
+        		gui.sendStream.close();
+        		gui.getStream.close();
+        		soc.close();
         		
         	}catch(IOException f){
         		f.printStackTrace();
@@ -164,13 +251,13 @@ public class CentralServer implements ActionListener {
         }
         
         // Method : sendMessage : sends the message to the client
-        private void sendMessage(String w) throws IOException{
+        public void sendMessage(String w) throws IOException{
         	try{
-        		sendStream.writeObject("SERVER - " + w);
-        		sendStream.flush();
+        		gui.sendStream.writeObject("SERVER - " + w);
+        		gui.sendStream.flush();
         		showMessage("\n SERVER - " + w);
         	}catch(IOException z){
-        		textArea.append("\n Message not send\n");
+        		gui.textArea.append("\n Message not send\n");
         	}
         }
         
@@ -179,7 +266,7 @@ public class CentralServer implements ActionListener {
         	SwingUtilities.invokeLater(
         			new Runnable(){
         				public void run(){
-        					textArea.append(text);
+        					gui.textArea.append(text);
         				}
         			}
         	);
@@ -190,17 +277,17 @@ public class CentralServer implements ActionListener {
         	SwingUtilities.invokeLater(
         			new Runnable(){
         				public void run(){
-        					textField.setEditable(tof);
+        					gui.textField.setEditable(tof);
         				}
         			}
         	);
         	
         }
         
-        @Override
+/*        
         // HERE WE ONLY HAVE ONE ACTION LISTNER WHICH WILL BE LOCATED ON THE SEND
         //BUTTON WHUCH READ THE MESSAGE FROM THE TEXT BOX AND DISPLAYS ON THE SCREEN
-        public void actionPerformed(ActionEvent arg0) {
+        @Override public void actionPerformed(ActionEvent arg0) {
                 String message = textField.getText();
                 try {
 					sendMessage(message);
@@ -209,6 +296,6 @@ public class CentralServer implements ActionListener {
 					e.printStackTrace();
 				}
                 textField.setText("");
-        }
+        }*/
  
 }
