@@ -19,6 +19,7 @@ import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -131,16 +132,15 @@ class ConnectThread extends Thread
                 System.out.println("IP of my system is := "+ip.getHostAddress());
                 
                 //open a socket
-                //ServerSocket ss = new ServerSocket(6789,100);
-                gui.CentralServer = new ServerSocket(6789, 50);
+                ServerSocket ss = new ServerSocket(6789,100);
                 while(true)
                 {
-                    SocketThread client1 = new SocketThread(gui, gui.CentralServer.accept());
+                    SocketThread client1 = new SocketThread(gui, ss.accept());
                     
                     //gui.clientList.add(client1);
                     //add thread to the list
-                    System.out.println("int addr: "+ gui.CentralServer.getLocalSocketAddress().toString());
-                    gui.clients.add(new MultipleClients("first", gui.CentralServer.getInetAddress(),6789,50));
+                    System.out.println("int addr: "+ client1.getInetAddress());
+                    gui.clients.add(new MultipleClients("first", client1.getInetAddress(),6789,50));
                     ClientFile c = new ClientFile(gui.clients);
                     //Thread c = new Thread(new ClientFile());
                     //System.out.println("Thread Content: " + gui.clientList);
@@ -163,6 +163,11 @@ class SocketThread extends Thread
         gui = c;
         soc = socket;
         start();
+    }
+    public InetAddress getInetAddress() throws IOException {
+        InetAddress ip = InetAddress.getLocalHost();
+        //System.out.println("IP of thread := "+ip.getHostAddress());
+        return ip;
     }
     //Once the GUI is set we now will establish our connection
     // Class : RunServer -
