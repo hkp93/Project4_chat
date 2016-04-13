@@ -1,18 +1,22 @@
 /********************************************************************************
  * PROJECT 4 : NETWORK CHAT APPLICATION
  * PATNERS : HENVY PATEL & JANKI PATEL
- * DESCRIPTION: clientFile.Java : This is the client side of the application 
+ * DESCRIPTION: clientFile.Java : This is the client side of the application
  * 				and and clients will use this to send and recieve messages
  ********************************************************************************/
 import java.io.*;
 import java.net.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 
-public class ClientFile implements ActionListener{
-	
-	// Here we will add all the required components of the chat application
+public class ClientFile extends MultipleClients implements ActionListener{
+    
+    public List<MultipleClients>list = new ArrayList<MultipleClients>();
+    public MultipleClients[] thread;
+    // Here we will add all the required components of the chat application
     private JFrame frame = new JFrame("ClientSide: Chat Application");
     private JTextArea textArea = new JTextArea();
     private JLabel online = new JLabel("Currently Online");
@@ -34,17 +38,18 @@ public class ClientFile implements ActionListener{
     // IP ADDRESS OF THE USER
     private String userIP ;
     private String message ="";
+    private String username = "";
     
     // constructor of the clientfile takes in the ip address of the user
     public ClientFile(){
-    	userIP = "";
-    	//FRAME FOR THE DISPLAY
+        userIP = "";
+        //FRAME FOR THE DISPLAY
         frame.setSize(600, 400);
         frame.setLocationRelativeTo(null);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         // creates a new panel to add all the fields in the jframes
         Panel p1 = new Panel();
-       
+        
         // Adds the send button with the action listener here
         sendButton.addActionListener(this);
         // adds the text field to view the messages exchanged
@@ -77,148 +82,159 @@ public class ClientFile implements ActionListener{
         frame.add(p1);
         frame.setVisible(true);
     }
+    public ClientFile(List<MultipleClients> clients)
+    {
+        this.list = clients;
+        System.out.println("length of list in client: \n" + clients);
+    }
     //when connecting to the server
-    public void RunClient(){
-    	try{
-    		System.out.println("I am inside runcients");
-    		toConnect(); // it will connect to the specific server
-    		
-    		setupStreams(); // to connect streams
-    		chatting(); //when the chatting actually takes place
-    		
-    	}catch(EOFException r){
-    		showMessage("\n No Valid connection");
-    	}catch(IOException t){
-    		t.printStackTrace();
-    	}finally{
-    		closeApp();
-    	}
-    	
+    public void run(){
+        try{
+            System.out.println("I am inside runcients");
+            System.out.println("length of list in client: \n" + list.size());
+            toConnect(); // it will connect to the specific server
+            setupStreams(); // to connect streams
+            chatting(); //when the chatting actually takes place
+            //send username to the server
+            //    		//username is not empty, send user name to the server
+            //        	if(!username.equals(""))
+            //        	{
+            //        		sendMessage("User " + "joined the chat!");
+            //        	}
+        }catch(EOFException r){
+            showMessage("\n No Valid connection");
+        }catch(IOException t){
+            t.printStackTrace();
+        }finally{
+            closeApp();
+        }
+        
     }
     
     // Method toConnect : to connect to the central server
     private void toConnect() throws IOException{
-    	System.out.println("1");
-    	showMessage("Connecting to Central Server ...\n");
-    	userIP = getip();
-    	int port = getportnumber();
-    	System.out.println("\n user ip :" + userIP + "portnumber :" + port );
-    	connection = new Socket(InetAddress.getByName(userIP),port);
-    	showMessage("Connected to : " + connection.getInetAddress().getHostAddress());
+        System.out.println("1");
+        showMessage("Connecting to Central Server ...\n");
+        userIP = getip();
+        int port = getportnumber();
+        System.out.println("\n user ip :" + userIP + "portnumber :" + port );
+        connection = new Socket(InetAddress.getByName(userIP),port);
+        showMessage("Connected to : " + connection.getInetAddress().getHostAddress());
     }
     
     //Method: setupStreams ---> similar to the Central Server
     private void setupStreams() throws IOException{
-    	sendStream = new ObjectOutputStream(connection.getOutputStream());
-    	sendStream.flush();
-    	getStream = new ObjectInputStream(connection.getInputStream());
-    	showMessage("\n Streams setup completedly \n"); ////-----?> update the clients list here
+        sendStream = new ObjectOutputStream(connection.getOutputStream());
+        sendStream.flush();
+        getStream = new ObjectInputStream(connection.getInputStream());
+        showMessage("\n Streams setup completedly \n"); ////-----?> update the clients list here
     }
     // method : chatting : chatting between the central server and clients
     private void chatting() throws IOException{
-    	String message = "Connected to server...." ;
-    	sendMessage(message);
-    	canType(true);
-    	do{
-    		try{
-    			message = (String) getStream.readObject();
-    			showMessage("\n " + message);
-    		}catch(ClassNotFoundException c){
-    			showMessage("\n Enable to display!");
-    		}
-    		
-    	}while(!message.equals("END"));
+        String message = "Connected to server...." ;
+        sendMessage(message);
+        canType(true);
+        do{
+            try{
+                message = (String) getStream.readObject();
+                showMessage("\n " + message);
+            }catch(ClassNotFoundException c){
+                showMessage("\n Enable to display!");
+            }
+            
+        }while(!message.equals("END"));
     }
     
     // method closes the streams and sockets once done with using
     private void closeApp(){
-    	showMessage("\n Closing App");
-    	canType(false);
-    	try{
-    		sendStream.close();
-    		getStream.close();
-    		connection.close();
-    	}catch(IOException c){
-    		c.printStackTrace();
-    	}
-    	
+        showMessage("\n Closing App");
+        canType(false);
+        try{
+            sendStream.close();
+            getStream.close();
+            connection.close();
+        }catch(IOException c){
+            c.printStackTrace();
+        }
+        
     }
-   
+    
     // to get the port number address from the feild
     private int getportnumber(){
-    	
-    	return Integer.parseInt(portfeild.getText());
+        
+        return Integer.parseInt(portfeild.getText());
     }
     // to get the ip address from the feild
     private String getip(){
-    	if(ip.getText() == ""){
-    		JOptionPane.showMessageDialog(frame,
-    			   "Server feild Empty!");
-    	}
-    	return ip.getText(); 
+        if(ip.getText() == ""){
+            JOptionPane.showMessageDialog(frame,
+                                          "Server feild Empty!");
+        }
+        return ip.getText();
     }
     // Method send message  -- sends the message to the display
     private void sendMessage(String w){
-    	try{
-    		sendStream.writeObject(w);
-    		sendStream.flush();
-    		showMessage("\n " + w);
-    	}catch(IOException z){
-    		textArea.append("\n Message not send\n");
-    	}
+        try{
+            sendStream.writeObject(w);
+            sendStream.flush();
+            showMessage("\n " + w);
+        }catch(IOException z){
+            textArea.append("\n Message not send\n");
+        }
     }
     
     // Method to show the message on the screen
     private void showMessage(final String w){
-    	System.out.println("inside show message");
-    	SwingUtilities.invokeLater(
-    			new Runnable(){
-    				public void run(){
-    					textArea.append(w);
-    				}
-    			}
-    	);
+        System.out.println("inside show message");
+        SwingUtilities.invokeLater(
+                                   new Runnable(){
+            public void run(){
+                textArea.append(w);
+            }
+        }
+                                   );
     }
     
- // Method canType : allows the user to type
+    // Method canType : allows the user to type
     private void canType(final boolean tof){
-    	SwingUtilities.invokeLater(
-    			new Runnable(){
-    				public void run(){
-    					textField.setEditable(tof);
-    				}
-    			}
-    	);
-    	
+        SwingUtilities.invokeLater(
+                                   new Runnable(){
+            public void run(){
+                textField.setEditable(tof);
+            }
+        }
+                                   );
+        
     }
     
- // HERE WE ONLY HAVE ONE ACTION LISTNER WHICH WILL BE LOCATED ON THE SEND
+    // HERE WE ONLY HAVE ONE ACTION LISTNER WHICH WILL BE LOCATED ON THE SEND
     //BUTTON WHUCH READ THE MESSAGE FROM THE TEXT BOX AND DISPLAYS ON THE SCREEN
     @Override public void actionPerformed(ActionEvent arg0) {
-    	String username = ""; 
-    	if(arg0.getSource() == portbutton){
-    		 //RunClient();
-    		 //canType(true);
-    	 }
-    	 if(arg0.getSource() == sendButton){
-    		 String message = textField.getText();
-    	
-	    	//get client's username
-	    	username = getUsername.getText();
-	    	getUsername.setEditable(false);
-	    	//if user didn't enter username
-	    	if(username.equals(""))
-	    		username = "Anonymous";
-	    	
-	    	String print = username + ": " + message;
-	        sendMessage(print);
-	        textField.setText("");
-    	 }
+        if(arg0.getSource() == portbutton){
+            //RunClient();
+            //canType(true);
+        }
+        if(arg0.getSource() == sendButton){
+            String message = textField.getText();
+            
+            //get client's username
+            username = getUsername.getText();
+            getUsername.setEditable(false);
+            //if user didn't enter username
+            if(username.equals(""))
+            {	
+                username = "Anonymous";
+            }
+            clientDisplay.setText(username);
+            String print = username + ": " + message;
+            sendMessage(print);
+            textField.setText("");
+        }
     }
     
     public static void main(String[]  args){
-		ClientFile client1 = new ClientFile();
-		client1.RunClient();
-
-	}
+        ClientFile client1 = new ClientFile();
+        client1.run();
+        
+    }
 }

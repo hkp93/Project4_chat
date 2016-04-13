@@ -35,6 +35,8 @@ public class CentralServer implements ActionListener {
     
     // for multiple clients
     public List<MultipleClients>clients = new ArrayList<MultipleClients>();
+    //public List<Thread> clients = new ArrayList<Thread>();
+    
     // Here we will add all the required components of the chat application
     public JFrame frame = new JFrame("Project 4 - Chat Application");
     public JTextArea textArea = new JTextArea();
@@ -135,6 +137,9 @@ class ConnectThread extends Thread
                     //gui.clientList.add(client1);
                     //add thread to the list
                     gui.clients.add(new MultipleClients("first",ss.getInetAddress(),6789,50));
+                    ClientFile c = new ClientFile(gui.clients);
+                    //Thread c = new Thread(new ClientFile());
+                    //System.out.println("Thread Content: " + gui.clientList);
                     System.out.println("Size of thread array: " + gui.clients.size());
                 }
             }
