@@ -35,7 +35,6 @@ public class CentralServer implements ActionListener {
     
     // for multiple clients
     public List<MultipleClients>clients = new ArrayList<MultipleClients>();
-    //public List<Thread> clients = new ArrayList<Thread>();
     
     // Here we will add all the required components of the chat application
     public JFrame frame = new JFrame("Project 4 - Chat Application");
@@ -129,14 +128,19 @@ class ConnectThread extends Thread
             while(true)
             {
                 InetAddress ip = InetAddress.getLocalHost();
+                System.out.println("IP of my system is := "+ip.getHostAddress());
+                
                 //open a socket
-                ServerSocket ss = new ServerSocket(6789,100);
+                //ServerSocket ss = new ServerSocket(6789,100);
+                gui.CentralServer = new ServerSocket(6789, 50);
                 while(true)
                 {
-                    SocketThread client1 = new SocketThread(gui, ss.accept());
+                    SocketThread client1 = new SocketThread(gui, gui.CentralServer.accept());
+                    
                     //gui.clientList.add(client1);
                     //add thread to the list
-                    gui.clients.add(new MultipleClients("first",ss.getInetAddress(),6789,50));
+                    System.out.println("int addr: "+ gui.CentralServer.getLocalSocketAddress().toString());
+                    gui.clients.add(new MultipleClients("first", gui.CentralServer.getInetAddress(),6789,50));
                     ClientFile c = new ClientFile(gui.clients);
                     //Thread c = new Thread(new ClientFile());
                     //System.out.println("Thread Content: " + gui.clientList);

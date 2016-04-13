@@ -8,6 +8,8 @@ import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
@@ -15,7 +17,6 @@ import javax.swing.*;
 public class ClientFile extends MultipleClients implements ActionListener{
     
     public List<MultipleClients>list = new ArrayList<MultipleClients>();
-    public MultipleClients[] thread;
     // Here we will add all the required components of the chat application
     private JFrame frame = new JFrame("ClientSide: Chat Application");
     private JTextArea textArea = new JTextArea();
@@ -85,22 +86,26 @@ public class ClientFile extends MultipleClients implements ActionListener{
     public ClientFile(List<MultipleClients> clients)
     {
         this.list = clients;
-        System.out.println("length of list in client: \n" + clients);
+        System.out.println("length of list in client: " + clients.size());
+        System.out.println("client info" + clients.toString());
     }
     //when connecting to the server
     public void run(){
         try{
-            System.out.println("I am inside runcients");
-            System.out.println("length of list in client: \n" + list.size());
-            toConnect(); // it will connect to the specific server
-            setupStreams(); // to connect streams
-            chatting(); //when the chatting actually takes place
-            //send username to the server
-            //    		//username is not empty, send user name to the server
-            //        	if(!username.equals(""))
-            //        	{
-            //        		sendMessage("User " + "joined the chat!");
-            //        	}
+            while(true)
+            {
+                System.out.println("I am inside runcients");
+                System.out.println("length of list in client: \n" + list.size());
+                toConnect(); // it will connect to the specific server
+                setupStreams(); // to connect streams
+                chatting(); //when the chatting actually takes place
+                //send username to the server
+                //    		//username is not empty, send user name to the server
+                //        	if(!username.equals(""))
+                //        	{
+                //        		sendMessage("User " + "joined the chat!");
+                //        	}
+            }
         }catch(EOFException r){
             showMessage("\n No Valid connection");
         }catch(IOException t){
@@ -136,6 +141,10 @@ public class ClientFile extends MultipleClients implements ActionListener{
         canType(true);
         do{
             try{
+                for(int i = 0; i < list.size(); i++)
+                {
+                    System.out.println("message from other clients" + message);
+                }
                 message = (String) getStream.readObject();
                 showMessage("\n " + message);
             }catch(ClassNotFoundException c){
